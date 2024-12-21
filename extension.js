@@ -8,6 +8,18 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 export default class ObsStatus extends Extension {
+    constructor(metadata) {
+        super(metadata);
+        this._settings=this.getSettings();
+        this.abbreviatedLabels=this._settings.get_boolean('abbreviated-labels');
+    }
+    _indicatorDestroy(){
+        log("Destroying Obs button...");
+        if (this._indicator) {
+            this._indicator.destroy();
+            this._indicator = null;
+        }
+    }
     _isObsRunning() {
         let windowActors = global.get_window_actors();
         for (let actor of windowActors) {
@@ -25,31 +37,43 @@ export default class ObsStatus extends Extension {
         return false;
     }
 
-    _drawObsTopBarPanel(status) {
-        this._indicator = new PanelMenu.Button(0.0, this.metadata.name, false);
-        let boxContainer = new St.BoxLayout({
-            vertical: false,
-            style_class: "container"
-        });
+    _drawObsTopBarPanel(recordingStatus,streamingStatus) {
+        let statusText = "Idle"; 
+        if (recordingStatus && streamingStatus) {
+            statusText = this.abbreviatedLabels? "Str & Rec":"Streaming & Recording";
+            } else if (recordingStatus) {
+                statusText = this.abbreviatedLabels? "Rec":"Recording";
+            } else if (streamingStatus) {
+                    statusText = this.abbreviatedLabels?"Str":"Streaming";
+            }
+            if(!this._indicator){
+                this._indicator = new PanelMenu.Button(0.0, this.metadata.name, false);
+                let boxContainer = new St.BoxLayout({
+                    vertical: false,
+                    style_class: "container"
+                });
 
-        let obsIcon = new St.Icon({
-            gicon: Gio.icon_new_for_string(`${this.path}/icons/icons-obs-250.svg`),
-            icon_size: 20,
-            style_class: "obs-icon"
-        });
+                let obsIcon = new St.Icon({
+                    gicon: Gio.icon_new_for_string(`${this.path}/icons/icons-obs-250.svg`),
+                    icon_size: 20,
+                    style_class: "obs-icon"
+                });
+                this.streamingStatusLabel = new St.Label({
+                    text: statusText,
+                    y_align: Clutter.ActorAlign.CENTER,
+                    y_expand: true
+                });
 
-        this.streamingStatusLabel = new St.Label({
-            text: status,
-            y_align: Clutter.ActorAlign.CENTER,
-            y_expand: true
-        });
+                boxContainer.add_child(obsIcon);
+                boxContainer.add_child(this.streamingStatusLabel);
+                this._indicator.add_child(boxContainer);
 
-        boxContainer.add_child(obsIcon);
-        boxContainer.add_child(this.streamingStatusLabel);
-        this._indicator.add_child(boxContainer);
-
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
-        log('Obs button added to the panel...');
+                Main.panel.addToStatusArea(this.uuid, this._indicator);
+                log('Obs button added to the panel...');
+            }
+            else{
+                this.streamingStatusLabel.text=statusText;
+            }
     }
 
     async _isObsRecording() {
@@ -89,47 +113,33 @@ export default class ObsStatus extends Extension {
         return false;
     }
 
-async _obsStatusMonitor() {
-    GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, async () => {
-        if (this._isObsRunning()) {
-            const recordingStatus = await this._isObsRecording();
-            const streamingStatus = await this._isObsStreaming();
-            let statusText = "Idle"; 
-
-            if (recordingStatus && streamingStatus) {
-                statusText = "Streaming & Recording";
-            } else if (recordingStatus) {
-                statusText = "Recording";
-            } else if (streamingStatus) {
-                statusText = "Streaming";
-            }
-
-            if (!this._indicator) {
-                this._drawObsTopBarPanel(statusText);
-            } else {
-                if (this.streamingStatusLabel) {
-                    this.streamingStatusLabel.text = statusText;
+    async _obsStatusMonitor() {
+        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, async () => {
+            if(!this.isDisabled){
+            if (this._isObsRunning()) {
+                const recordingStatus = await this._isObsRecording();
+                const streamingStatus = await this._isObsStreaming();
+                this._drawObsTopBarPanel(recordingStatus,streamingStatus);
+                } else {
+                    this._indicatorDestroy();
                 }
+                return true;
             }
-        } else {
-            // Si OBS no está corriendo, destruir el indicador
-            if (this._indicator) {
-                this._indicator.destroy();
-                this._indicator = null;
+            else{
+                return false;
             }
-        }
-        return true; // Keep the monitor working
-    });
-}
-
+        });
+    }
     enable() {
+        this.isDisabled=false;
+        this._settings.connect('changed::abbreviated-labels', () => {
+            this.abbreviatedLabels=this._settings.get_boolean('abbreviated-labels');
+        });
         this._obsStatusMonitor();
     }
 
     disable() {
-        if (this._indicator) {
-            this._indicator.destroy();
-            this._indicator = null;
-        }
+        this._indicatorDestroy();
+        this.isDisabled=true;
     }
 }

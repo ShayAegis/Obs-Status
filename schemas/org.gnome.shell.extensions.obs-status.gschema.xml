@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+
+  <schema path="/org/gnome/shell/extensions/obs-status/" id="org.gnome.shell.extensions.obs-status">
+    <key name="abbreviated-labels" type="b">
+      <default>false</default>
+    </key>
+  </schema>
+</schemalist>

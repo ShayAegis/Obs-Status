@@ -1,8 +1,9 @@
 {
     "uuid": "obs-status@Shay.com",
     "name": "Obs Status",
-    "description": "Extension that displays OBS's current status",
+    "description": "Obs stream status extension",
     "version": 1,
     "shell-version": ["47"],
-    "url": "https://github.com/ShayAegis/obs-status"
+    "url": "https://github.com/ShayAegis/obs-status",
+    "settings-schema": "org.gnome.shell.extensions.obs-status"
 }
