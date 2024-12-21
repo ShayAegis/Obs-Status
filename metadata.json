@@ -1,0 +1,8 @@
+{
+    "uuid": "obs-status@Shay.com",
+    "name": "Obs Status",
+    "description": "Extension that displays OBS's current status",
+    "version": 1,
+    "shell-version": ["47"],
+    "url": "https://github.com/ShayAegis/obs-status"
+}
