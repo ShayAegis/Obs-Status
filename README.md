@@ -1,6 +1,6 @@
 # Documentation
 
-**Version 1.1**
+**Version 1.2**
 
 ## _What is OBS-Status_
 
@@ -8,7 +8,7 @@ OBS-Status is a GNOME extension that adds an indicator to the GNOME Top Bar. Thi
 
 ## _Bugs Fixed_
 
-- The Top Bar indicator was not being destroyed when disabling the extension.
+- The Top Bar indicator was not detecting sometimes that OBS is Streaming.
 
 ## _Features Added_
 

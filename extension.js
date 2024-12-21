@@ -14,8 +14,8 @@ export default class ObsStatus extends Extension {
         this.abbreviatedLabels=this._settings.get_boolean('abbreviated-labels');
     }
     _indicatorDestroy(){
-        log("Destroying Obs button...");
         if (this._indicator) {
+            log("Destroying Obs button...");
             this._indicator.destroy();
             this._indicator = null;
         }
@@ -97,14 +97,19 @@ export default class ObsStatus extends Extension {
     }
     async _isObsStreaming() {
         try {
+            //Obtain ports being Used by OBS
             const checkStreamingStatus = Gio.Subprocess.new(['sh','-c','netstat -anp | grep obs | grep ESTABLISHED'], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
             const [stdout, stderr] = await checkStreamingStatus.communicate_utf8_async(null, null);
     
             if (checkStreamingStatus.get_successful()) {
-                    const sentDataSize = stdout.split(/\s+/).filter(Boolean)[2];
-                    if(sentDataSize>0){
-                        log("Obs is Streaming...")
-                        return true;
+                    const sentDataSize = stdout.split(/\s+/).slice(2);
+                    for(let x=0;x<sentDataSize.length;x+=7){
+                        //Check if there is any data being sent through ports
+                        const isdataBeingSent=sentDataSize.some(dataBytes=>dataBytes>0);
+                        if(isdataBeingSent){
+                            log("Obs is Streaming...")
+                            return true;
+                        }
                     }
             }
         } catch (e) {
